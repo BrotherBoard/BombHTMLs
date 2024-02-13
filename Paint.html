@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drawing Game</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+
+        #welcome-screen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 9999;
+        }
+
+        #drawing-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        #controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+        }
+
+        /* Additional CSS for fullscreen */
+        #drawing-canvas:-webkit-full-screen {
+            width: 100vw;
+            height: 100vh;
+            background-color: black;
+        }
+
+        #drawing-canvas:-moz-full-screen {
+            width: 100vw;
+            height: 100vh;
+            background-color: black;
+        }
+
+        #drawing-canvas:-ms-fullscreen {
+            width: 100vw;
+            height: 100vh;
+            background-color: black;
+        }
+
+        #drawing-canvas:fullscreen {
+            width: 100vw;
+            height: 100vh;
+            background-color: black;
+        }
+    </style>
+</head>
+<body>
+    <div id="welcome-screen">
+        <h1>Welcome to Drawing Game</h1>
+        <button id="start-button">Start</button>
+    </div>
+
+    <canvas id="drawing-canvas"></canvas>
+
+    <div id="controls" style="display: none;">
+        <input type="text" id="text-input" placeholder="Enter text">
+        <button id="apply-text-button">Apply Text</button>
+        <input type="color" id="color-picker">
+        <input type="range" id="brush-size" min="1" max="50" value="10">
+        <button id="download-button">Download</button>
+        <button id="clear-button">Clear</button>
+        <button id="fullscreen-button">Fullscreen</button>
+    </div>
+
+    <script>
+        const welcomeScreen = document.getElementById("welcome-screen");
+        const startButton = document.getElementById("start-button");
+        const canvas = document.getElementById("drawing-canvas");
+        const context = canvas.getContext("2d");
+        const controls = document.getElementById("controls");
+        const textInput = document.getElementById("text-input");
+        const applyTextButton = document.getElementById("apply-text-button");
+        const colorPicker = document.getElementById("color-picker");
+        const brushSize = document.getElementById("brush-size");
+        const downloadButton = document.getElementById("download-button");
+        const clearButton = document.getElementById("clear-button");
+        const fullscreenButton = document.getElementById("fullscreen-button");
+
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+
+        function startGame() {
+            welcomeScreen.style.display = "none";
+            controls.style.display = "block";
+
+            if (!document.fullscreenElement) {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                document.documentElement.requestFullscreen();
+            } else {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }    
+
+            context.lineJoin = "round";
+            context.lineCap = "round";
+            context.lineWidth = brushSize.value;
+            context.strokeStyle = colorPicker.value;
+
+            canvas.addEventListener("mousedown", startDrawing);
+            canvas.addEventListener("touchstart", startDrawing);
+            canvas.addEventListener("mousemove", draw);
+            canvas.addEventListener("touchmove", draw);
+            canvas.addEventListener("mouseup", stopDrawing);
+            canvas.addEventListener("touchend", stopDrawing);
+            canvas.addEventListener("mouseout", stopDrawing);
+
+            applyTextButton.addEventListener("click", insertText);
+            colorPicker.addEventListener("change", () => context.strokeStyle = colorPicker.value);
+            brushSize.addEventListener("change", () => context.lineWidth = brushSize.value);
+            downloadButton.addEventListener("click", downloadImage);
+            clearButton.addEventListener("click", confirmClearCanvas);
+            fullscreenButton.addEventListener("click", toggleFullscreen);
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            [lastX, lastY] = [e.clientX || e.touches[0].clientX, e.clientY || e.touches[0].clientY];
+            e.preventDefault();
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            const x = e.pageX || e.touches[0].pageX;
+            const y = e.pageY || e.touches[0].pageY;
+            context.beginPath();
+            context.moveTo(lastX, lastY);
+            context.lineTo(x, y);
+            context.stroke();
+            lastX = x;
+            lastY = y;
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+        }
+
+        function confirmClearCanvas() {
+            if (confirm("Are you sure you want to clear the canvas?")) {
+                clearCanvas();
+            }
+        }
+
+        function clearCanvas() {
+            context.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function downloadImage() {
+            const image = canvas.toDataURL("image/png");
+            const link = document.createElement("a");
+            link.href = image;
+            link.download = "drawing.png";
+            link.click();
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        function insertText() {
+            const text = textInput.value;
+            context.font = `${brushSize.value}px Arial`; // Set font size
+            context.fillStyle = colorPicker.value; // Set text color
+            context.fillText(text, lastX, lastY); // Insert text at last known position
+        }
+
+        startButton.addEventListener("click", startGame);
+    </script>
+</body>
+</html>

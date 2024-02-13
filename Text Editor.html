@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>HTML Code Editor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            overscroll-behavior-y: none;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .editor-container {
+            position: relative;
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            /*margin-bottom: 50px; /* Ensure space for floating buttons */
+        }
+
+        .line-numbers {
+            width: 30px; /* Decreased width */
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-right: 1px solid #ccc;
+            overflow-y: auto;
+            flex-shrink: 0;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+        }
+
+        .line-numbers pre {
+            margin: 0;
+            font-size: 16px;
+            line-height: 20px;
+        }
+
+        textarea {
+            flex: 1;
+            width: calc(100% - 30px); /* Adjusted width */
+            resize: none;
+            border: none;
+            padding: 10px;
+            font-size: 16px;
+            line-height: 20px;
+            overflow-x: auto;
+            white-space: nowrap; /* Turn off line wrapping */
+            margin-left: 60px; /* Ensure space for line numbers */
+            margin-right: 10px; /* Added margin for better visibility */
+        }
+
+        .button-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            margin-right: 10px;
+            background-color: rgba(255, 255, 255, 0.5);
+            display: flex;
+            justify-content: left;
+            padding: 10px;
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .toggle-button-container {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            background-color: rgba(255, 255, 255, 0.3); /* Reduced opacity when menu is hidden */
+            padding: 10px;
+        }
+
+        button {
+            padding: 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 3px;
+        }
+        
+        .meh {
+            padding: 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 3px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="editor-container">
+        <div class="line-numbers" id="line-numbers-container">
+            <pre id="line-numbers-content"></pre>
+        </div>
+        <textarea id="code" placeholder="Write something here..."></textarea>
+    </div>
+    <div class="button-container" id="button-container">
+        <button onclick="loadFile()">Load</button>
+        <button onclick="downloadCode()">Save</button>
+        <button onclick="clearEditor()">Clear</button> <!-- Added clear button -->
+    </div>
+    <div class="toggle-button-container">
+        <button class="meh" onclick="toggleContainer()" id="toggle-button">&#x25BC;</meh>
+    </div>
+    <script>
+        let isButtonContainerVisible = true;
+
+        function toggleContainer() {
+            const buttonContainer = document.getElementById('button-container');
+            const button = document.getElementById('toggle-button');
+            isButtonContainerVisible = !isButtonContainerVisible;
+
+            if (isButtonContainerVisible) {
+                button.innerHTML = '&#x25BC;';
+                buttonContainer.style.display = 'flex';
+                document.querySelector('.meh').style.backgroundColor = 'rgba(0, 123, 255, 1)'; // Restore opacity
+            } else {
+                button.innerHTML = '&#x25B2;';
+                buttonContainer.style.display = 'none';
+                document.querySelector('.meh').style.backgroundColor = 'rgba(0, 123, 255, 0.3)'; // Reduced opacity when menu is hidden
+            }
+        }
+
+        const codeTextarea = document.getElementById('code');
+        const lineNumbersPre = document.getElementById('line-numbers-content');
+        const lineNumbersContainer = document.getElementById('line-numbers-container');
+
+        codeTextarea.addEventListener('input', updateLineNumbers);
+        lineNumbersContainer.addEventListener('scroll', syncScroll);
+        codeTextarea.addEventListener('scroll', syncScroll);
+        codeTextarea.addEventListener('input', syncScroll);
+        updateLineNumbers();
+
+        function updateLineNumbers() {
+            const lines = codeTextarea.value.split('\n').length;
+            const lineNumbers = Array.from(Array(lines).keys()).map(i => i + 1).join('\n');
+            lineNumbersPre.textContent = lineNumbers + '\n';
+        }
+
+        function syncScroll() {
+            lineNumbersContainer.scrollTop = codeTextarea.scrollTop;
+        }
+
+        function loadFile() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.html';
+            input.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    codeTextarea.value = e.target.result;
+                    updateLineNumbers();
+                };
+                reader.readAsText(file);
+            });
+            input.click();
+        }
+
+        function downloadCode() {
+            const fileName = prompt('Enter file name:', 'file.txt');
+            if (!fileName) return;
+            const code = document.getElementById('code').value;
+            const blob = new Blob([code]);
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        function clearEditor() {
+            const confirmation = confirm('Are you sure you want to clear the editor?');
+            if (confirmation) {
+                document.getElementById('code').value = ''; // Clear the editor's content
+                updateLineNumbers(); // Update line numbers if applicable
+            }
+        }
+    </script>
+</body>
+
+</html>

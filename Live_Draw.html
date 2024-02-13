@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Offline Drawing</title>
+<style>
+    canvas {
+        border: 2px solid black;
+    }
+
+    #clearSign {
+        display: none;
+        color: red;
+        font-size: 18px;
+    }
+</style>
+</head>
+<body>
+<canvas id="drawingCanvas" width="400" height="400"></canvas>
+<input type="password" id="password" placeholder="Password">
+<button onclick="clearDrawing()">Clear Drawing</button><span id="countdown">1.2s</span><span id="clearSign">Tick!</span>
+
+<script>
+    const canvas = document.getElementById('drawingCanvas');
+    const ctx = canvas.getContext('2d');
+    const passwordInput = document.getElementById('password');
+    const countdownDisplay = document.getElementById('countdown');
+    const clearSign = document.getElementById('clearSign');
+    let hasDrawn = false; // Track if the user has drawn something
+
+    // Load drawing from localStorage if exists
+    loadDrawing();
+
+    // Drawing functionality
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+
+    function draw(e) {
+        if (!isDrawing) return;
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(e.pageX - canvas.offsetLeft, e.pageY - canvas.offsetTop);
+        ctx.stroke();
+        [lastX, lastY] = [e.pageX - canvas.offsetLeft, e.pageY - canvas.offsetTop];
+        saveDrawing();
+        hasDrawn = true; // User has drawn something
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+        isDrawing = true;
+        [lastX, lastY] = [e.pageX - canvas.offsetLeft, e.pageY - canvas.offsetTop];
+    });
+    canvas.addEventListener('touchstart', (e) => {
+        isDrawing = true;
+        [lastX, lastY] = [e.touches[0].pageX - canvas.offsetLeft, e.touches[0].pageY - canvas.offsetTop];
+    });
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        draw(e.touches[0]);
+    });
+    canvas.addEventListener('mouseup', () => isDrawing = false);
+    canvas.addEventListener('touchend', () => isDrawing = false);
+
+    // Save drawing to localStorage
+    function saveDrawing() {
+        localStorage.setItem('drawing', canvas.toDataURL());
+    }
+
+    // Load drawing from localStorage
+    function loadDrawing() {
+        const savedDrawing = localStorage.getItem('drawing');
+        if (savedDrawing) {
+            const img = new Image();
+            img.src = savedDrawing;
+            img.onload = function() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas before drawing
+                ctx.drawImage(img, 0, 0);
+            }
+        }
+    }
+
+    // Clear drawing if password is correct
+    function clearDrawing() {
+        const password = passwordInput.value.trim();
+        if (password === 'lmao') {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Save the cleared state immediately
+            saveDrawing();
+            hasDrawn = false; // Reset the flag since the canvas is empty now
+        } else {
+            alert('Incorrect password!');
+        }
+    }
+
+    // Update countdown dynamically
+    function updateCountdown() {
+        let remainingTime = 1.2;
+        const interval = setInterval(() => {
+            remainingTime -= 0.1;
+            if (remainingTime <= 0) {
+                clearInterval(interval);
+                updateCountdown(); // Restart countdown
+                clearSign.style.display = 'inline'; // Show clear sign
+                setTimeout(() => {
+                    clearSign.style.display = 'none'; // Hide clear sign after 2 seconds
+                }, 2000);
+            }
+            countdownDisplay.textContent = remainingTime.toFixed(1) + "s";
+        }, 100);
+    }
+
+    // Initial countdown
+    updateCountdown();
+
+    // Reload drawing from localStorage every 1.2 seconds
+    setInterval(() => {
+        loadDrawing();
+    }, 1200);
+
+</script>
+</body>
+</html>
