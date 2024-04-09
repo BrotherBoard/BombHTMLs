@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>File Upload</title>
+<style>
+    @font-face {
+        font-family: 'LMAO';
+        src: url('./uploads/font1.ttf') format('opentype');
+    }
+
+    body {
+        font-family: 'LMAO', Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f0f0f0;
+    }
+    .container {
+        font-family: 'LMAO', Arial, sans-serif;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    .file-upload {
+        display: block;
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 20px;
+        border: 2px dashed #ccc;
+        border-radius: 5px;
+        text-align: center;
+        cursor: pointer;
+    }
+    .file-upload:hover {
+        border-color: #aaa;
+    }
+    input[type="file"] {
+        display: none;
+    }
+    .file-list {
+        list-style-type: none;
+        padding: 0;
+    }
+    .file-item {
+        padding: 10px;
+        background-color: #f9f9f9;
+        border-radius: 5px;
+        margin-bottom: 5px;
+        display: flex;
+        align-items: center;
+    }
+    .file-name {
+        flex-grow: 1;
+    }
+    .download-btn, .upload-btn {
+        background-color: #4caf50;
+        color: #fff;
+        border: none;
+        padding: 8px 15px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-left: 10px;
+    }
+    .download-btn:hover, .upload-btn:hover {
+        background-color: #45a049;
+    }
+    .picked-files {
+        margin-top: 20px;
+        border-top: 2px solid #ccc;
+        padding-top: 20px;
+    }
+    .settings-btn {
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        padding: 8px 15px;
+        text-align: center;
+        display: inline-block;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+    .settings-popup {
+        position: absolute;
+        top: 10%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: #fff;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        padding: 20px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        z-index: 1;
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <button class="settings-btn" onclick="toggleSettings()" style="font-family: 'LMAO', Arial, sans-serif;">Settings</button>
+    <div id="settings-popup" class="settings-popup" style="display: none;">
+        <h2>Settings</h2>
+        <h3>Change Font:</h3>
+        <button class="font-btn" onclick="changeFont('font1', 'ttf')">Font 1</button>
+        <button class="font-btn" onclick="changeFont('font2', 'ttf')">Font 2</button>
+        <button class="font-btn" onclick="changeFont('font3', 'ttf')">Font 3</button>
+        <button class="font-btn" onclick="changeFont('font4', 'otf')">Font 4</button>
+        <button class="font-btn" onclick="changeFont('font5', 'otf')">Font 5</button>
+        <button class="font-btn" onclick="changeFont('font6', 'otf')">Font 6</button>
+    </div>
+    <h1>Upload Files</h1>
+    <label for="file-upload" class="file-upload">Choose a file or drag it here</label>
+    <input type="file" id="file-upload" multiple>
+    <ul id="file-list" class="file-list"></ul>
+    <div class="picked-files">
+        <h2>Picked Files</h2>
+        <ul id="picked-file-list" class="file-list"></ul>
+    </div>
+</div>
+
+<script>
+    function toggleSettings() {
+        const settingsPopup = document.getElementById('settings-popup');
+        settingsPopup.style.display = (settingsPopup.style.display === 'none' ? 'block' : 'none');
+    }
+
+    window.onload = function() {
+        document.getElementById('file-upload').addEventListener('change', handleFileSelect);
+        refreshFileList();
+    };
+
+    function handleFileSelect(event) {
+        const files = event.target.files;
+        for (let i = 0; i < files.length; i++) {
+            displayPickedFile(files[i]);
+        }
+    }
+
+    function displayPickedFile(file) {
+        const pickedFileList = document.getElementById('picked-file-list');
+        const listItem = document.createElement('li');
+        listItem.className = 'file-item';
+        listItem.innerHTML = `
+            <span class="file-name">${file.name}</span>
+            <button class="upload-btn" onclick="uploadPickedFile('${file.name}', '${file.size}')">Upload</button>
+            <button class="download-btn" onclick="downloadFile('${file.name}')">Download</button>
+        `;
+        pickedFileList.appendChild(listItem);
+    }
+
+    function downloadFile(filename) {
+        window.location.href = '/uploads/' + filename;
+    }
+
+    function uploadPickedFile(filename) {
+        const fileInput = document.getElementById('file-upload');
+        const file = fileInput.files[0];
+        const xhr = new XMLHttpRequest();
+        const formData = new FormData();
+        formData.append('file', file, filename);
+
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === XMLHttpRequest.DONE) {
+                if (xhr.status === 200) {
+                    refreshFileList();
+                } else {
+                    console.error('File upload failed:', xhr.responseText);
+                }
+            }
+        };
+
+        xhr.open('POST', '/upload', true);
+        xhr.send(formData);
+    }
+
+    function refreshFileList() {
+        const xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === XMLHttpRequest.DONE) {
+                if (xhr.status === 200) {
+                    const fileList = JSON.parse(xhr.responseText);
+                    const fileListElement = document.getElementById('file-list');
+                    fileListElement.innerHTML = '';
+                    fileList.forEach(function(fileName) {
+                        const listItem = document.createElement('li');
+                        listItem.className = 'file-item';
+                        listItem.innerHTML = `
+                            <span class="file-name">${fileName}</span>
+                            <a href="/uploads/${fileName}" class="download-btn" download>Download</a>
+                        `;
+                        fileListElement.appendChild(listItem);
+                    });
+                } else {
+                    console.error('Failed to retrieve file list:', xhr.responseText);
+                }
+            }
+        };
+
+        xhr.open('GET', '/files', true);
+        xhr.send();
+    }
+
+</script>
+</body>
+</html>

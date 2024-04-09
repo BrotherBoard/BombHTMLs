@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>HTML Code Editor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            overscroll-behavior-y: none;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .editor-container {
+            position: relative;
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .line-numbers {
+            width: 30px;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-right: 1px solid #ccc;
+            overflow-y: auto;
+            flex-shrink: 0;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+        }
+
+        .line-numbers pre {
+            margin: 0;
+            font-size: 16px;
+            line-height: 20px;
+        }
+
+        textarea {
+            flex: 1;
+            width: calc(100% - 30px);
+            resize: none;
+            border: none;
+            padding: 10px;
+            font-size: 16px;
+            line-height: 20px;
+            overflow-x: auto;
+            white-space: nowrap;
+            margin-left: 60px;
+            margin-right: 10px;
+            background-color: #ffffff;
+        }
+
+        .button-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            margin-right: 10px;
+            background-color: rgba(255, 255, 255, 0.5);
+            display: flex;
+            padding: 10px;
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+            overflow-x: scroll;
+        }
+
+        .toggle-button-container {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            background-color: rgba(255, 255, 255, 0.3);
+            padding: 10px;
+        }
+
+        button {
+            padding: 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 3px;
+        }
+
+        .meh {
+            padding: 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 3px;
+        }
+
+        button[disabled] {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        button:hover:not([disabled]) {
+            background-color: #0056b3;
+        }
+
+        .copy-message {
+            position: fixed;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 5px;
+            z-index: 999;
+            display: none;
+        }
+
+        .color-button {
+            width: 50px;
+            height: 50px;
+            border: none;
+            cursor: pointer;
+            margin: 0 3px;
+        }
+
+        .color-button:hover {
+            opacity: 0.8;
+        }
+
+        /* Theme Dialog Styles */
+        .theme-dialog {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            z-index: 999;
+        }
+
+        .theme-dialog label {
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .theme-dialog button {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="editor-container">
+        <div class="line-numbers" id="line-numbers-container">
+            <pre id="line-numbers-content"></pre>
+        </div>
+        <textarea id="code" placeholder="Write something here..."></textarea>
+    </div>
+    <div class="button-container" id="button-container">
+        <button onclick="loadFile()">Load</button>
+        <button onclick="downloadCode()">Save</button>
+        <button onclick="clearEditor()">Clear</button>
+        <button onclick="copyCode()" id="copyButton" disabled>Copy</button>
+        <button onclick="cutCode()" id="cutButton" disabled>Cut</button>
+        <button onclick="pasteCode()" id="pasteButton" disabled>Paste</button>
+        <button onclick="openThemeDialog()">Theme</button>
+        <button onclick="sendTab()">Tab</button>
+        <button onclick="toggleFS()">Fullscreen</button>
+        <button id="lineNumber" onclick="updateLineNumbers()">(1, 1)</button>
+    </div>
+    <div class="toggle-button-container">
+        <button class="meh" onclick="toggleContainer()" id="toggle-button">&#x25BC;</button>
+    </div>
+    <div class="copy-message" id="copyMessage">toast</div>
+
+    <!-- Theme Dialog -->
+    <div class="theme-dialog" id="theme-dialog">
+        <label for="backgroundColor">Background Color:</label>
+        <input type="color" id="backgroundColor">
+        <label for="textColor">Text Color:</label>
+        <input type="color" id="textColor">
+        <button onclick="applyTheme()">Apply</button>
+    </div>
+
+    <script>
+        let isButtonContainerVisible = true;
+        let clipboardContent = '';
+
+        function toggleContainer() {
+            const buttonContainer = document.getElementById('button-container');
+            const button = document.getElementById('toggle-button');
+            isButtonContainerVisible = !isButtonContainerVisible;
+
+            if (isButtonContainerVisible) {
+                button.innerHTML = '&#x25BC;';
+                buttonContainer.style.display = 'flex';
+                document.querySelector('.meh').style.backgroundColor = 'rgba(0, 123, 255, 1)';
+            } else {
+                button.innerHTML = '&#x25B2;';
+                buttonContainer.style.display = 'none';
+                document.querySelector('.meh').style.backgroundColor = 'rgba(0, 123, 255, 0.3)';
+            }
+        }
+
+        const codeTextarea = document.getElementById('code');
+        //const codeTextarea = document.getElementById('code');
+        const lineNumbersPre = document.getElementById('line-numbers-content');
+        const lineNumbersContainer = document.getElementById('line-numbers-container');
+        const pasteButton = document.getElementById('pasteButton');
+        const copyButton = document.getElementById('copyButton');
+        const cutButton = document.getElementById('cutButton');
+        const copyMessage = document.getElementById('copyMessage');
+        var idk = "";
+        var cline = 1;
+
+        codeTextarea.addEventListener('input', function() {
+            updateLineNumbers();
+            pasteButton.disabled = clipboardContent === '';
+        });
+        codeTextarea.addEventListener('scroll', syncScroll);
+        lineNumbersContainer.addEventListener('scroll', syncScroll2);
+        codeTextarea.addEventListener('mouseup', function() {
+            const isTextSelected = codeTextarea.selectionStart !== codeTextarea.selectionEnd;
+            copyButton.disabled = !isTextSelected;
+            cutButton.disabled = !isTextSelected;
+            updateLineNumbers();
+        });
+        updateLineNumbers();
+
+        function getLineNumber() {
+            var position = codeTextarea.selectionStart;
+            var lines = codeTextarea.value.substr(0, position).split("\n");
+            return lines.length;
+        }
+
+        function updateLineNumbers() {
+            const lines = codeTextarea.value.split('\n').length;
+            const lineNumbers = Array.from(Array(lines).keys()).map(i => i + 1).join('\n');
+            lineNumbersPre.textContent = lineNumbers + '\n';
+            document.getElementById("lineNumber").innerText = getLineNumber(codeTextarea);
+        }
+
+        function syncScroll() {
+            lineNumbersContainer.scrollTop = codeTextarea.scrollTop;
+        }
+
+        function syncScroll2() {
+             codeTextarea.scrollTop = lineNumbersContainer.scrollTop;
+        }
+
+        function loadFile() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                idk = file.name;
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    codeTextarea.value = e.target.result;
+                    updateLineNumbers();
+                };
+                reader.readAsText(file);
+            });
+            input.click();
+        }
+
+        function downloadCode() {
+            const id = makeid(5);
+            var fileName = "lmao.txt"
+            if (idk == "") {
+                fileName = prompt('Enter file name:', id + '.html');
+            } else {
+                fileName = prompt('Enter file name:', idk);
+            }
+            if (!fileName) return;
+            const code = document.getElementById('code').value;
+            const blob = new Blob([code]);
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        function openThemeDialog() {
+            document.getElementById('theme-dialog').style.display = 'block';
+        }
+
+        function applyTheme() {
+            const backgroundColor = document.getElementById('backgroundColor').value;
+            const textColor = document.getElementById('textColor').value;
+
+            codeTextarea.style.backgroundColor = backgroundColor;
+            lineNumbersContainer.style.backgroundColor = backgroundColor;
+            codeTextarea.style.color = textColor;
+            lineNumbersPre.style.color = textColor;
+            
+            document.getElementById('theme-dialog').style.display = 'none';
+            document.body.style.backgroundColor = backgroundColor;
+        }
+
+        function clearEditor() {
+            const confirmation = confirm('Are you sure you want to clear the editor?');
+            if (confirmation) {
+                document.getElementById('code').value = '';
+                updateLineNumbers();
+                clipboardContent = '';
+                pasteButton.disabled = true;
+                copyButton.disabled = true;
+                cutButton.disabled = true;
+            }
+        }
+
+        function copyCode(cut) {
+            const index = codeTextarea.selectionStart;
+            clipboardContent = codeTextarea.value.substring(codeTextarea.selectionStart, codeTextarea.selectionEnd);
+            pasteButton.disabled = clipboardContent === '';
+            if (!cut) {
+                codeTextarea.focus();
+                toast("Copied \""+clipboardContent+"\"");
+                codeTextarea.setSelectionRange(index, index);
+            } else toast("Cut \""+clipboardContent+"\"");
+        }
+
+        function makeid(length) {
+            var result           = '';
+            var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            var charactersLength = characters.length;
+            for ( var i = 0; i < length; i++ ) {
+                result += characters.charAt(Math.floor(Math.random() * charactersLength));
+            }
+            return result;
+        }
+
+        function cutCode() {
+            copyCode(1);
+            const startPosition = codeTextarea.selectionStart;
+            const index = startPosition;
+            const endPosition = codeTextarea.selectionEnd;
+            const currentValue = codeTextarea.value;
+            const newValue = currentValue.substring(0, startPosition) + currentValue.substring(endPosition);
+            codeTextarea.value = newValue;
+            updateLineNumbers();
+            codeTextarea.focus();
+            codeTextarea.setSelectionRange(index, index);
+        }
+
+        function pasteCode() {
+            if (clipboardContent !== '') {
+                const startPosition = codeTextarea.selectionStart;
+                const index = startPosition + clipboardContent.length;
+                const endPosition = codeTextarea.selectionEnd;
+                const currentValue = codeTextarea.value;
+                const newValue = currentValue.substring(0, startPosition) + clipboardContent + currentValue.substring(endPosition);
+                codeTextarea.value = newValue;
+                updateLineNumbers();
+                codeTextarea.focus();
+                codeTextarea.setSelectionRange(index, index);
+                toast("Pasted \""+clipboardContent+"\"");
+            }
+        }
+
+        function sendTab() {
+            const startPosition = codeTextarea.selectionStart;
+            const index = startPosition + 4;
+            const endPosition = codeTextarea.selectionEnd;
+            const currentValue = codeTextarea.value;
+            const newValue = currentValue.substring(0, startPosition) + "    " + currentValue.substring(endPosition);
+            codeTextarea.value = newValue;
+            codeTextarea.focus();
+            codeTextarea.setSelectionRange(index, index);
+            updateLineNumbers();
+        }
+
+        function toggleFS() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+                toast("Fullscreen ON!");
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                    toast("Fullscreen OFF!");
+                }
+            }
+        }
+
+        function toast(text) {
+            copyMessage.style.display = 'block';
+            if (text.length > 30) {
+                text = text.slice(0,29) + "...\""
+            }
+            copyMessage.innerHTML = text;
+            setTimeout(() => {
+                copyMessage.style.display = 'none';
+            }, 6000);
+        }
+    </script>
+</body>
+
+</html>
