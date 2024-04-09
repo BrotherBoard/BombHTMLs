@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BrotherBoard</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f5ff;
+    margin: 0;
+    padding: 0;
+    color: #333;
+  }
+  .container {
+    max-width: 600px;
+    margin: 20px auto;
+    padding: 20px;
+    border-radius: 10px;
+    background-color: #e6f2ff;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  h1 {
+    text-align: center;
+    color: #0066cc;
+  }   
+  h3 {
+    text-align: center;
+    color: #0066cc;
+  }
+  ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  li {
+    margin-bottom: 10px;
+  }
+  .folder-link {
+    display: block;
+    padding: 10px;
+    border-radius: 5px;
+    background-color: #cce5ff;
+    color: #0056b3;
+    text-decoration: none;
+    transition: background-color 0.3s, color 0.3s;
+  }
+  .folder-link:hover {
+    background-color: #99ccff;
+    color: #004080;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>BrotherBoard</h1>
+  <h3>Welcome to my BombHTMLs repo or something idk</h3>
+  <ul id="folderList"></ul>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const folders = [
+      { name: "File Share", path: "/FileShare" },
+      { name: "Text Editor", path: "/TextEditor" },
+      { name: "Paint", path: "/Paint" }
+      // Add more folders as needed
+    ];
+
+    const folderList = document.getElementById('folderList');
+    folders.forEach(folder => {
+      const listItem = document.createElement('li');
+      const link = document.createElement('a');
+      link.href = folder.path;
+      link.classList.add('folder-link');
+      link.textContent = folder.name;
+      listItem.appendChild(link);
+      folderList.appendChild(listItem);
+    });
+  });
+</script>
+</body>
+</html>
