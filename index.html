@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Folder Redirector</title>
+<title>BrotherBoard</title>
 <style>
   body {
     font-family: Arial, sans-serif;
@@ -24,6 +24,10 @@
     text-align: center;
     color: #0066cc;
   }
+  h3 {
+    text-align: center;
+    color: #0066cc;
+  }
   ul {
     list-style-type: none;
     padding: 0;
@@ -31,7 +35,7 @@
   li {
     margin-bottom: 10px;
   }
-  .file-link {
+  .folder-link {
     display: block;
     padding: 10px;
     border-radius: 5px;
@@ -40,7 +44,7 @@
     text-decoration: none;
     transition: background-color 0.3s, color 0.3s;
   }
-  .file-link:hover {
+  .folder-link:hover {
     background-color: #99ccff;
     color: #004080;
   }
@@ -48,40 +52,33 @@
 </head>
 <body>
 <div class="container">
-  <h1>File Redirector</h1>
-  <ul id="fileList"></ul>
+  <h1>Folder Redirector</h1>
+  <h3>Welcome to my GitHub of BombHTMLs or something</h3>
+  <ul id="folderList"></ul>
 </div>
 
 <script>
   document.addEventListener("DOMContentLoaded", function() {
-    fetchFilesInDirectory();
+    const folders = [
+      { name: "File Share", path: "/FileShare/FileShare.html" },
+      { name: "Text Editor", path: "/TextEditor/TextEditor.html" },
+      { name: "Paint", path: "/Paint/Paint.html" },
+      { name: "Intents", path: "/Intents/Intents.html" },
+      { name: "Live Draw", path: "/LiveDraw/LiveDraw.html" },
+      { name: "Calculator", path: "/Calculator/Calculator.html" }
+    ];
+
+    const folderList = document.getElementById('folderList');
+    folders.forEach(folder => {
+      const listItem = document.createElement('li');
+      const link = document.createElement('a');
+      link.href = folder.path;
+      link.classList.add('folder-link');
+      link.textContent = folder.name;
+      listItem.appendChild(link);
+      folderList.appendChild(listItem);
+    });
   });
-
-  async function fetchFilesInDirectory() {
-    try {
-      const response = await fetch('./');
-      const html = await response.text();
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, 'text/html');
-      const files = Array.from(doc.querySelectorAll('a')).map(a => ({
-        name: a.textContent.trim(),
-        path: a.getAttribute('href')
-      })).filter(file => file.name !== 'Parent Directory' && file.name !== 'Index of /');
-
-      const fileList = document.getElementById('fileList');
-      files.forEach(file => {
-        const listItem = document.createElement('li');
-        const link = document.createElement('a');
-        link.href = file.path;
-        link.classList.add('file-link');
-        link.textContent = file.name;
-        listItem.appendChild(link);
-        fileList.appendChild(listItem);
-      });
-    } catch (error) {
-      console.error('Error fetching files:', error);
-    }
-  }
 </script>
 </body>
 </html>
