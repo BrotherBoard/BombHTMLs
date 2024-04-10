@@ -156,6 +156,30 @@
         .theme-dialog button {
             margin-top: 10px;
         }
+        
+        /* GoTo Dialog Styles */
+        .goto-dialog {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            z-index: 999;
+        }
+
+        .goto-dialog label {
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .goto-dialog button {
+            margin-top: 10px;
+        }
+        
     </style>
 </head>
 
@@ -176,7 +200,7 @@
         <button onclick="openThemeDialog()">Theme</button>
         <button onclick="sendTab()">Tab</button>
         <button onclick="toggleFS()">Fullscreen</button>
-        <button id="lineNumber" onclick="updateLineNumbers()">(1, 1)</button>
+        <button id="lineNumber" onclick="openGotoDialog()">0, 0</button>
     </div>
     <div class="toggle-button-container">
         <button class="meh" onclick="toggleContainer()" id="toggle-button">&#x25BC;</button>
@@ -190,6 +214,15 @@
         <label for="textColor">Text Color:</label>
         <input type="color" id="textColor">
         <button onclick="applyTheme()">Apply</button>
+    </div>
+    
+    <!-- GoTo Dialog -->
+    <div class="goto-dialog" id="goto-dialog">
+        <label for="backgroundColor">Column index</label>
+        <input type="number" id="gotoLineNumber">
+        <label for="textColor">Row index</label>
+        <input type="number" id="gotoColumnNumber">
+        <button onclick="applyGoto()">Go</button>
     </div>
 
     <script>
@@ -242,12 +275,31 @@
             var lines = codeTextarea.value.substr(0, position).split("\n");
             return lines.length;
         }
+        
+        function doGoTo(lineNumber, lineNumber2) {
+   		 var lines = codeTextarea.value.split("\n");
+		    var newPosition = 0;
+		    for (var i = 0; i < lineNumber - 1; i++) {
+ 		       newPosition += lines[i].length + 1;
+		    }
+		    newPosition += lineNumber2 - 1;
+		    codeTextarea.focus();
+		    codeTextarea.setSelectionRange(newPosition + 1, newPosition + 1);
+		    updateLineNumbers()
+		}    
+        
+        function getLineNumber2() {
+            var position = codeTextarea.selectionStart;
+            var lines = codeTextarea.value.substr(0, position).split("\n");
+            var currentLine = lines[lines.length - 1];
+            return currentLine.length;
+        }
 
         function updateLineNumbers() {
             const lines = codeTextarea.value.split('\n').length;
             const lineNumbers = Array.from(Array(lines).keys()).map(i => i + 1).join('\n');
             lineNumbersPre.textContent = lineNumbers + '\n';
-            document.getElementById("lineNumber").innerText = getLineNumber(codeTextarea);
+            document.getElementById("lineNumber").innerText = getLineNumber(codeTextarea) + ", " + getLineNumber2();
         }
 
         function syncScroll() {
@@ -299,6 +351,10 @@
         function openThemeDialog() {
             document.getElementById('theme-dialog').style.display = 'block';
         }
+        
+        function openGotoDialog() {
+            document.getElementById('goto-dialog').style.display = 'block';
+        }
 
         function applyTheme() {
             const backgroundColor = document.getElementById('backgroundColor').value;
@@ -311,6 +367,14 @@
             
             document.getElementById('theme-dialog').style.display = 'none';
             document.body.style.backgroundColor = backgroundColor;
+        }
+        
+        function applyGoto() {
+            const gotoLineNumber = document.getElementById('gotoLineNumber').value;
+            const gotoColumnNumber = document.getElementById('gotoColumnNumber').value;
+            document.getElementById('goto-dialog').style.display = 'none';
+            doGoTo(gotoLineNumber, gotoColumnNumber);
+            toast("WentTo! (" + getLineNumber() + ", " + getLineNumber2()+ ")");
         }
 
         function clearEditor() {
